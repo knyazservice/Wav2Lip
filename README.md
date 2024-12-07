@@ -31,10 +31,11 @@ All results from this open-source code or our [demo website](https://bhaasha.iii
 
 Prerequisites
 -------------
-- `Python 3.6` 
+- `Python 3.10.15` 
 - ffmpeg: `sudo apt-get install ffmpeg`
 - Install necessary packages using `pip install -r requirements.txt`. Alternatively, instructions for using a docker image is provided [here](https://gist.github.com/xenogenesi/e62d3d13dadbc164124c830e9c453668). Have a look at [this comment](https://github.com/Rudrabha/Wav2Lip/issues/131#issuecomment-725478562) and comment on [the gist](https://gist.github.com/xenogenesi/e62d3d13dadbc164124c830e9c453668) if you encounter any issues. 
 - Face detection [pre-trained model](https://www.adrianbulat.com/downloads/python-fan/s3fd-619a316812.pth) should be downloaded to `face_detection/detection/sfd/s3fd.pth`. Alternative [link](https://iiitaphyd-my.sharepoint.com/:u:/g/personal/prajwal_k_research_iiit_ac_in/EZsy6qWuivtDnANIG73iHjIBjMSoojcIV0NULXV-yiuiIg?e=qTasa8) if the above does not work.
+- Add mobilenet.pth to checkpoints folder once installed [https://huggingface.co/spaces/kaushikpandav/Lipsync_Antriksh_AI/blob/b75bfda8050a21f608efd33f96ca0b1af41cd23d/checkpoints/mobilenet.pth along with one of the weights files below.
 
 Getting the weights
 ----------
