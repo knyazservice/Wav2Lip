@@ -78,6 +78,8 @@ class Wav2LipProcessor:
         # Загрузка моделей
         self.model = self._load_wav2lip_model(checkpoint_path)
         self.detector = self._load_face_detector(face_detector_path)
+        self.cache_dir = cache_dir
+        self.result_dir = result_dir
 
         # Создание временной директории
         pathlib.Path(cache_dir).mkdir(parents=True, exist_ok=True)
