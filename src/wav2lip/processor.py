@@ -1,4 +1,5 @@
 import os
+import pathlib
 import subprocess
 from pathlib import Path
 from typing import Optional, Union
@@ -28,6 +29,7 @@ class Wav2LipProcessor:
     def __init__(
         self,
         checkpoint_path: str = "checkpoints/wav2lip_gan.pth",
+        face_detector_path: str = "checkpoints/mobilenet.pth",
         img_size: int = 96,
         face_det_batch_size: int = 64 * 8,
         wav2lip_batch_size: int = 128,
@@ -39,6 +41,8 @@ class Wav2LipProcessor:
         box: list = None,
         static: bool = False,
         fps: float = 25.0,
+        cache_dir: str = "temp",
+        result_dir: str = "results",
     ):
         """
         Инициализация процессора
@@ -73,11 +77,11 @@ class Wav2LipProcessor:
 
         # Загрузка моделей
         self.model = self._load_wav2lip_model(checkpoint_path)
-        self.detector = self._load_face_detector()
+        self.detector = self._load_face_detector(face_detector_path)
 
         # Создание временной директории
-        os.makedirs("temp", exist_ok=True)
-        os.makedirs("results", exist_ok=True)
+        pathlib.Path(cache_dir).mkdir(parents=True, exist_ok=True)
+        pathlib.Path(result_dir).mkdir(parents=True, exist_ok=True)
 
     def _load_wav2lip_model(self, checkpoint_path: str) -> Wav2Lip:
         """Загрузка модели Wav2Lip"""
@@ -100,17 +104,17 @@ class Wav2LipProcessor:
         except Exception as e:
             raise ModelLoadError(f"Не удалось загрузить модель Wav2Lip: {str(e)}") from e
 
-    def _load_face_detector(self) -> RetinaFace:
+    def _load_face_detector(self, face_detector_path: str) -> RetinaFace:
         """Загрузка детектора лиц RetinaFace"""
         try:
             if self.device == "cuda":
                 detector = RetinaFace(
                     gpu_id=0,
-                    model_path="checkpoints/mobilenet.pth",
+                    model_path=face_detector_path,
                     network="mobilenet",
                 )
             else:
-                detector = RetinaFace(model_path="checkpoints/mobilenet.pth", network="mobilenet")
+                detector = RetinaFace(model_path=face_detector_path, network="mobilenet")
             return detector
         except Exception as e:
             raise ModelLoadError(f"Не удалось загрузить детектор лиц: {str(e)}") from e
@@ -222,7 +226,7 @@ class Wav2LipProcessor:
         self,
         face_path: Union[str, Path],
         audio_path: Union[str, Path],
-        outfile: Optional[Union[str, Path]] = "results/result_voice.mp4",
+        outfile: Optional[Union[str, Path]] = None,
     ) -> Path:
         """
         Обработка видео/изображения и аудио
@@ -232,6 +236,9 @@ class Wav2LipProcessor:
         :param outfile: Путь для сохранения результата
         :return: Путь к обработанному видео
         """
+        if outfile is None:
+            outfile = f"{self.result_dir}/result.mp4"
+
         try:
             face_path = str(face_path)
             audio_path = str(audio_path)
@@ -291,7 +298,7 @@ class Wav2LipProcessor:
             # Обработка аудио
             try:
                 if not audio_path.endswith(".wav"):
-                    temp_wav = "temp/temp.wav"
+                    temp_wav = f"{self.cache_dir}/temp.wav"
                     subprocess.check_call(["ffmpeg", "-y", "-i", audio_path, temp_wav])
                     audio_path = temp_wav
 
@@ -330,7 +337,7 @@ class Wav2LipProcessor:
                     if i == 0:
                         frame_h, frame_w = full_frames[0].shape[:-1]
                         out = cv2.VideoWriter(
-                            "temp/result.avi",
+                            f"{self.cache_dir}/result.avi",
                             cv2.VideoWriter_fourcc(*"DIVX"),
                             fps,
                             (frame_w, frame_h),
@@ -362,7 +369,15 @@ class Wav2LipProcessor:
             # Объединение видео и аудио
             try:
                 subprocess.check_call(
-                    ["ffmpeg", "-y", "-i", "temp/result.avi", "-i", audio_path, outfile]
+                    [
+                        "ffmpeg",
+                        "-y",
+                        "-i",
+                        f"{self.cache_dir}/result.avi",
+                        "-i",
+                        audio_path,
+                        outfile,
+                    ]
                 )
             except subprocess.CalledProcessError as e:
                 raise VideoProcessingError(f"Ошибка при создании финального видео: {str(e)}") from e
